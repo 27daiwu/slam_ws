@@ -21,6 +21,8 @@ add_executable(pointcloud2_to_livox_custom
   src/pointcloud2_to_livox_custom.cpp
 )
 
+add_dependencies(pointcloud2_to_livox_custom ${catkin_EXPORTED_TARGETS} livox_ros_driver_generate_messages_cpp)
+
 target_link_libraries(pointcloud2_to_livox_custom
   ${catkin_LIBRARIES}
 )

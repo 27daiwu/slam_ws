@@ -115,6 +115,12 @@ private:
         case 4: // ABSOLUTE_MICROSECONDS_MINUS_FIRST
             return static_cast<double>(t_raw - t0_raw);
 
+        case 5: // RELATIVE_NANOSECONDS
+            return static_cast<double>(t_raw) * 1e-3;
+
+        case 6: // ABSOLUTE_NANOSECONDS_MINUS_FIRST
+            return static_cast<double>(t_raw - t0_raw) * 1e-3;
+
         case 0: // INDEX_LINEAR_100MS
         default:
             return 0.0; // 该模式不走这里
@@ -225,6 +231,8 @@ private:
             case 2: span_us = static_cast<double>(max_time - min_time); break;
             case 3: span_us = static_cast<double>(max_time - min_time) * 1e6; break;
             case 4: span_us = static_cast<double>(max_time - min_time); break;
+            case 5: span_us = static_cast<double>(max_time - min_time) * 1e-3; break;
+            case 6: span_us = static_cast<double>(max_time - min_time) * 1e-3; break;
             default: break;
             }
 

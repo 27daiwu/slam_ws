@@ -10,8 +10,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
-set(CycloneDDS_DIR "/home/unitree/cyclonedds_ws/install/cyclonedds/lib/cmake/CycloneDDS")
-set(CycloneDDS-CXX_DIR "/home/unitree/cyclonedds_ws/install/cyclonedds_cxx/lib/cmake/CycloneDDS-CXX")
+set(CycloneDDS_DIR "/usr/local/lib/cmake/CycloneDDS")
+set(CycloneDDS-CXX_DIR "/usr/local/lib/cmake/CycloneDDS-CXX")
 
 find_package(CycloneDDS REQUIRED)
 find_package(CycloneDDS-CXX REQUIRED)
@@ -22,7 +22,6 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   /usr/local/include
   /opt/unitree_robotics/include
-  /home/unitree/cyclonedds_ws/install/cyclonedds_cxx/include/ddscxx
 )
 
 link_directories(

@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # 1. 环境初始化
 # 加载 ROS Noetic 基础环境
 if [ -f "/opt/ros/noetic/setup.bash" ]; then

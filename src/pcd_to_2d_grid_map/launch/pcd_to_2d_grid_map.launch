@@ -3,7 +3,7 @@
   <arg name="mode" default="pcd"/>
 
   <!-- 仅 mode=pcd 时使用 -->
-  <arg name="pcd_path" default="/home/unitree/maps/fastlio_map.pcd"/>
+  <arg name="pcd_path" default="/home/unitree/slam_ws/maps/fastlio_map.pcd"/>
 
   <!-- 仅 mode=topic 时使用 -->
   <arg name="pointcloud_topic" default="/Laser_map"/>

@@ -1,5 +1,10 @@
 /devel
 /build
-/maps
+maps/
 *.bag
-src/Livox-SDK-master
+/src/Livox-SDK-master
+/src/Sophus
+/src/Livox-SDK
+/src/FAST-LIVO2
+/src/rpg_vikit
+/src/livox_ros_driver

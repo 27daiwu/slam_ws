@@ -5,19 +5,19 @@ roslaunch pcd_to_2d_grid_map pcd_to_2d_grid_map.launch \
   pcd_path:=/home/unitree/slam_ws/maps/all_raw_points.pcd \
   output_dir:=/home/unitree/slam_ws/maps \
   map_name:=g1_nav_map \
-  resolution:=0.04 \
-  z_min:=0.1 \
+  resolution:=0.03 \
+  z_min:=0.12 \
   z_max:=1.5 \
-  voxel_leaf_size:=0.05 \
-  padding_radius:=0.12 \
-  min_points_per_cell:=1
+  voxel_leaf_size:=0.02 \
+  padding_radius:=0.01 \
+  min_points_per_cell:=4
 
 如果你想直接从 FAST-LIVO2 发布的全局点云话题生成：
 
 roslaunch pcd_to_2d_grid_map pcd_to_2d_grid_map.launch \
   mode:=topic \
   pointcloud_topic:=/Laser_map \
-  output_dir:=/home/unitree/maps \
+  output_dir:=/home/unitree/slam_ws/maps \
   map_name:=g1_nav_map
 
 生成后你会得到：
