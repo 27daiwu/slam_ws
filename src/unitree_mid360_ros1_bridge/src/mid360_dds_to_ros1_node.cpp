@@ -191,9 +191,17 @@ private:
         }
 
         // linear acceleration
-        ros_imu.linear_acceleration.x = dds_imu->linear_acceleration().x();
-        ros_imu.linear_acceleration.y = dds_imu->linear_acceleration().y();
-        ros_imu.linear_acceleration.z = dds_imu->linear_acceleration().z();
+        constexpr double kG = 9.81;
+
+        ros_imu.linear_acceleration.x = dds_imu->linear_acceleration().x() * kG;
+        ros_imu.linear_acceleration.y = dds_imu->linear_acceleration().y() * kG;
+        ros_imu.linear_acceleration.z = dds_imu->linear_acceleration().z() * kG;
+
+        // double ax = ros_imu.linear_acceleration.x;
+        // double ay = ros_imu.linear_acceleration.y;
+        // double az = ros_imu.linear_acceleration.z;
+        // double acc_norm = std::sqrt(ax * ax + ay * ay + az * az);
+        // ROS_INFO_THROTTLE(1.0, "IMU acc norm = %.4f m/s^2", acc_norm);
 
         for (int i = 0; i < 9; ++i) {
             ros_imu.linear_acceleration_covariance[i] =

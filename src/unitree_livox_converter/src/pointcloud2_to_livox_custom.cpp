@@ -77,6 +77,16 @@ private:
     int max_valid_span_us_;
     int debug_print_points_;
 
+    struct TmpPoint
+    {
+        float x;
+        float y;
+        float z;
+        float intensity;
+        uint16_t ring;
+        float raw_time;
+    };
+
     static uint8_t clampToUint8(float v)
     {
         if (!std::isfinite(v)) return 0;
@@ -100,30 +110,30 @@ private:
         return static_cast<uint32_t>(us);
     }
 
-    double convertRawTimeToUs(float t_raw, float t0_raw) const
+    double convertRawTimeToUs(float t_raw, float t_base_raw) const
     {
         switch (time_mode_) {
         case 1: // RELATIVE_SECONDS
-            return static_cast<double>(t_raw) * 1e6;
+            return static_cast<double>(t_raw - t_base_raw) * 1e6;
 
         case 2: // RELATIVE_MICROSECONDS
-            return static_cast<double>(t_raw);
+            return static_cast<double>(t_raw - t_base_raw);
 
-        case 3: // ABSOLUTE_SECONDS_MINUS_FIRST
-            return static_cast<double>(t_raw - t0_raw) * 1e6;
+        case 3: // ABSOLUTE_SECONDS_MINUS_BASE
+            return static_cast<double>(t_raw - t_base_raw) * 1e6;
 
-        case 4: // ABSOLUTE_MICROSECONDS_MINUS_FIRST
-            return static_cast<double>(t_raw - t0_raw);
+        case 4: // ABSOLUTE_MICROSECONDS_MINUS_BASE
+            return static_cast<double>(t_raw - t_base_raw);
 
         case 5: // RELATIVE_NANOSECONDS
-            return static_cast<double>(t_raw) * 1e-3;
+            return static_cast<double>(t_raw - t_base_raw) * 1e-3;
 
-        case 6: // ABSOLUTE_NANOSECONDS_MINUS_FIRST
-            return static_cast<double>(t_raw - t0_raw) * 1e-3;
+        case 6: // ABSOLUTE_NANOSECONDS_MINUS_BASE
+            return static_cast<double>(t_raw - t_base_raw) * 1e-3;
 
         case 0: // INDEX_LINEAR_100MS
         default:
-            return 0.0; // 该模式不走这里
+            return 0.0;
         }
     }
 
@@ -156,7 +166,6 @@ private:
         out_msg.points.reserve(point_count);
 
         std::vector<float> times;
-        float first_time = 0.0f;
         float min_time = std::numeric_limits<float>::infinity();
         float max_time = -std::numeric_limits<float>::infinity();
 
@@ -167,7 +176,6 @@ private:
                 for (size_t i = 0; i < point_count; ++i, ++iter_time) {
                     float t = *iter_time;
                     times.push_back(t);
-                    if (i == 0) first_time = t;
                     if (std::isfinite(t)) {
                         if (t < min_time) min_time = t;
                         if (t > max_time) max_time = t;
@@ -185,39 +193,81 @@ private:
         }
 
         try {
-            sensor_msgs::PointCloud2ConstIterator<float> iter_x(*msg, "x");
-            sensor_msgs::PointCloud2ConstIterator<float> iter_y(*msg, "y");
-            sensor_msgs::PointCloud2ConstIterator<float> iter_z(*msg, "z");
-            sensor_msgs::PointCloud2ConstIterator<float> iter_intensity(*msg, "intensity");
-            sensor_msgs::PointCloud2ConstIterator<uint16_t> iter_ring(*msg, "ring");
+    sensor_msgs::PointCloud2ConstIterator<float> iter_x(*msg, "x");
+    sensor_msgs::PointCloud2ConstIterator<float> iter_y(*msg, "y");
+    sensor_msgs::PointCloud2ConstIterator<float> iter_z(*msg, "z");
+    sensor_msgs::PointCloud2ConstIterator<float> iter_intensity(*msg, "intensity");
+    sensor_msgs::PointCloud2ConstIterator<uint16_t> iter_ring(*msg, "ring");
 
-            for (size_t i = 0; i < point_count;
-                 ++i, ++iter_x, ++iter_y, ++iter_z, ++iter_intensity, ++iter_ring) {
+    std::vector<TmpPoint> tmp_points;
+    tmp_points.reserve(point_count);
 
+    for (size_t i = 0; i < point_count;
+         ++i, ++iter_x, ++iter_y, ++iter_z, ++iter_intensity, ++iter_ring) {
+
+        TmpPoint tp;
+        tp.x = *iter_x;
+        tp.y = *iter_y;
+        tp.z = *iter_z;
+        tp.intensity = *iter_intensity;
+        tp.ring = *iter_ring;
+        tp.raw_time = needRawTimeField() ? times[i] : 0.0f;
+
+        tmp_points.push_back(tp);
+    }
+
+    if (time_mode_ == 0) {
+        for (size_t i = 0; i < tmp_points.size(); ++i) {
+            livox_ros_driver::CustomPoint p;
+            p.x = tmp_points[i].x;
+            p.y = tmp_points[i].y;
+            p.z = tmp_points[i].z;
+            p.reflectivity = clampToUint8(tmp_points[i].intensity);
+            p.tag = 0;
+            p.line = clampRingToUint8(tmp_points[i].ring);
+
+            double ratio = (tmp_points.size() <= 1) ? 0.0
+                          : static_cast<double>(i) / static_cast<double>(tmp_points.size() - 1);
+            p.offset_time = clampOffsetUs(ratio * static_cast<double>(scan_period_us_));
+
+            out_msg.points.push_back(p);
+        }
+    } else {
+            // 先按 raw_time 升序排序
+            std::sort(tmp_points.begin(), tmp_points.end(),
+                    [](const TmpPoint& a, const TmpPoint& b) {
+                        return a.raw_time < b.raw_time;
+                    });
+
+            // 排序后重新构建调试用 times
+            times.clear();
+            times.reserve(tmp_points.size());
+            for (const auto& tp : tmp_points) {
+                times.push_back(tp.raw_time);
+            }
+
+            // 基准时间统一用 min_time，而不是 first_time
+            const float time_base = min_time;
+
+            for (size_t i = 0; i < tmp_points.size(); ++i) {
                 livox_ros_driver::CustomPoint p;
-                p.x = *iter_x;
-                p.y = *iter_y;
-                p.z = *iter_z;
-                p.reflectivity = clampToUint8(*iter_intensity);
+                p.x = tmp_points[i].x;
+                p.y = tmp_points[i].y;
+                p.z = tmp_points[i].z;
+                p.reflectivity = clampToUint8(tmp_points[i].intensity);
                 p.tag = 0;
-                p.line = clampRingToUint8(*iter_ring);
+                p.line = clampRingToUint8(tmp_points[i].ring);
 
-                if (time_mode_ == 0) {
-                    // INDEX_LINEAR_100MS：按点序均匀展开
-                    double ratio = (point_count <= 1) ? 0.0
-                                  : static_cast<double>(i) / static_cast<double>(point_count - 1);
-                    p.offset_time = clampOffsetUs(ratio * static_cast<double>(scan_period_us_));
-                } else {
-                    double offset_us = convertRawTimeToUs(times[i], first_time);
-                    p.offset_time = clampOffsetUs(offset_us);
-                }
+                double offset_us = convertRawTimeToUs(tmp_points[i].raw_time, time_base);
+                p.offset_time = clampOffsetUs(offset_us);
 
                 out_msg.points.push_back(p);
             }
-        } catch (const std::exception& e) {
-            ROS_ERROR_THROTTLE(1.0, "Failed to parse PointCloud2 fields: %s", e.what());
-            return;
         }
+    } catch (const std::exception& e) {
+        ROS_ERROR_THROTTLE(1.0, "Failed to parse PointCloud2 fields: %s", e.what());
+        return;
+    }
 
         out_msg.point_num = static_cast<uint32_t>(out_msg.points.size());
 
