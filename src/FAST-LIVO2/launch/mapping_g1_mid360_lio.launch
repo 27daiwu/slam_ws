@@ -1,0 +1,8 @@
+<launch>
+  <rosparam command="load" file="$(find fast_livo)/config/g1_mid360_lio.yaml" />
+
+  <node pkg="fast_livo"
+        type="fastlivo_mapping"
+        name="laserMapping"
+        output="screen" />
+</launch>
