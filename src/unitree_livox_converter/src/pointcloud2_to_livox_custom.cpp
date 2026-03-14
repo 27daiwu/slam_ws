@@ -80,60 +80,117 @@ private:
     }
 
     void cloudCallback(const sensor_msgs::PointCloud2ConstPtr& msg)
-    {
-        if (!msg) return;
+{
+    if (!msg) return;
 
-        const size_t point_count = static_cast<size_t>(msg->width) * static_cast<size_t>(msg->height);
-        if (point_count == 0) {
-            ROS_WARN_THROTTLE(1.0, "Received empty PointCloud2.");
-            return;
-        }
+    const size_t point_count =
+        static_cast<size_t>(msg->width) * static_cast<size_t>(msg->height);
+    if (point_count == 0) {
+        ROS_WARN_THROTTLE(1.0, "Received empty PointCloud2.");
+        return;
+    }
 
-        livox_ros_driver::CustomMsg out_msg;
-        out_msg.header = msg->header;
-        out_msg.header.frame_id = frame_id_;
+    livox_ros_driver::CustomMsg out_msg;
+    out_msg.header = msg->header;
+    out_msg.header.frame_id = frame_id_;
+    out_msg.timebase = static_cast<uint64_t>(msg->header.stamp.toNSec());
+    out_msg.lidar_id = static_cast<uint8_t>(std::max(0, std::min(255, lidar_id_int_)));
+    out_msg.rsvd[0] = 0;
+    out_msg.rsvd[1] = 0;
+    out_msg.rsvd[2] = 0;
+    out_msg.points.reserve(point_count);
 
-        if (use_msg_stamp_as_timebase_) {
-            out_msg.timebase = static_cast<uint64_t>(msg->header.stamp.toNSec());
-        } else {
-            out_msg.timebase = 0;
-        }
+    std::vector<float> times;
+    times.reserve(point_count);
 
-        out_msg.lidar_id = static_cast<uint8_t>(std::max(0, std::min(255, lidar_id_int_)));
-        out_msg.rsvd[0] = 0;
-        out_msg.rsvd[1] = 0;
-        out_msg.rsvd[2] = 0;
-        out_msg.points.reserve(point_count);
+    float min_time = std::numeric_limits<float>::infinity();
+    float max_time = -std::numeric_limits<float>::infinity();
 
-        try {
-            sensor_msgs::PointCloud2ConstIterator<float> iter_x(*msg, "x");
-            sensor_msgs::PointCloud2ConstIterator<float> iter_y(*msg, "y");
-            sensor_msgs::PointCloud2ConstIterator<float> iter_z(*msg, "z");
-            sensor_msgs::PointCloud2ConstIterator<float> iter_intensity(*msg, "intensity");
-            sensor_msgs::PointCloud2ConstIterator<uint16_t> iter_ring(*msg, "ring");
-            sensor_msgs::PointCloud2ConstIterator<float> iter_time(*msg, "time");
-
-            for (size_t i = 0; i < point_count;
-                 ++i, ++iter_x, ++iter_y, ++iter_z, ++iter_intensity, ++iter_ring, ++iter_time) {
-                livox_ros_driver::CustomPoint p;
-                p.x = *iter_x;
-                p.y = *iter_y;
-                p.z = *iter_z;
-                p.reflectivity = clampToUint8(*iter_intensity);
-                p.tag = 0;
-                p.line = clampRingToUint8(*iter_ring);
-                p.offset_time = convertTimeToOffset(*iter_time, time_is_in_seconds_);
-                out_msg.points.push_back(p);
+    try {
+        sensor_msgs::PointCloud2ConstIterator<float> iter_time(*msg, "time");
+        for (size_t i = 0; i < point_count; ++i, ++iter_time) {
+            float t = *iter_time;
+            times.push_back(t);
+            if (std::isfinite(t)) {
+                if (t < min_time) min_time = t;
+                if (t > max_time) max_time = t;
             }
-        } catch (const std::exception& e) {
-            ROS_ERROR_THROTTLE(1.0, "Failed to parse PointCloud2 fields: %s", e.what());
-            return;
         }
+    } catch (const std::exception& e) {
+        ROS_ERROR_THROTTLE(1.0, "Failed to parse time field: %s", e.what());
+        return;
+    }
 
-        out_msg.point_num = static_cast<uint32_t>(out_msg.points.size());
-        pub_.publish(out_msg);
+    if (!std::isfinite(min_time) || !std::isfinite(max_time)) {
+        ROS_ERROR_THROTTLE(1.0, "Invalid time field in PointCloud2.");
+        return;
+    }
 
-        ROS_DEBUG_THROTTLE(1.0, "Published CustomMsg with %u points", out_msg.point_num);
+    // 自动判断 time 字段单位
+    // 常见情况：
+    // 1) 相对时间（秒）: 一帧内跨度通常 < 0.2
+    // 2) 相对时间（毫秒）/（微秒）: 一帧内跨度几十到几万
+    // 3) 绝对时间: 数值很大，但一帧内 max-min 很小，先减 min_time 再换算
+    double time_scale_to_us = 1.0;
+
+    double span = static_cast<double>(max_time - min_time);
+
+    if (span < 1.0) {
+        // 认为单位是秒
+        time_scale_to_us = 1e6;
+    } else if (span < 1000.0) {
+        // 认为单位是毫秒
+        time_scale_to_us = 1e3;
+    } else {
+        // 认为单位已经接近微秒
+        time_scale_to_us = 1.0;
+    }
+
+    try {
+        sensor_msgs::PointCloud2ConstIterator<float> iter_x(*msg, "x");
+        sensor_msgs::PointCloud2ConstIterator<float> iter_y(*msg, "y");
+        sensor_msgs::PointCloud2ConstIterator<float> iter_z(*msg, "z");
+        sensor_msgs::PointCloud2ConstIterator<float> iter_intensity(*msg, "intensity");
+        sensor_msgs::PointCloud2ConstIterator<uint16_t> iter_ring(*msg, "ring");
+
+        for (size_t i = 0; i < point_count;
+             ++i, ++iter_x, ++iter_y, ++iter_z, ++iter_intensity, ++iter_ring) {
+            livox_ros_driver::CustomPoint p;
+            p.x = *iter_x;
+            p.y = *iter_y;
+            p.z = *iter_z;
+            p.reflectivity = clampToUint8(*iter_intensity);
+            p.tag = 0;
+            p.line = clampRingToUint8(*iter_ring);
+
+            double rel_t = static_cast<double>(times[i] - min_time);
+            if (!std::isfinite(rel_t) || rel_t < 0.0) {
+                rel_t = 0.0;
+            }
+
+            double offset_us = rel_t * time_scale_to_us;
+            if (offset_us < 0.0) offset_us = 0.0;
+            if (offset_us > static_cast<double>(std::numeric_limits<uint32_t>::max())) {
+                offset_us = static_cast<double>(std::numeric_limits<uint32_t>::max());
+            }
+
+            p.offset_time = static_cast<uint32_t>(offset_us);
+            out_msg.points.push_back(p);
+        }
+    } catch (const std::exception& e) {
+        ROS_ERROR_THROTTLE(1.0, "Failed to parse PointCloud2 fields: %s", e.what());
+        return;
+    }
+
+    out_msg.point_num = static_cast<uint32_t>(out_msg.points.size());
+
+    ROS_INFO_THROTTLE(1.0,
+        "CustomMsg time stats: min=%.9f max=%.9f span=%.9f scale_to_us=%.1f first_offset=%u last_offset=%u",
+        min_time, max_time, span, time_scale_to_us,
+        out_msg.points.empty() ? 0 : out_msg.points.front().offset_time,
+        out_msg.points.empty() ? 0 : out_msg.points.back().offset_time);
+
+    pub_.publish(out_msg);
     }
 };
 

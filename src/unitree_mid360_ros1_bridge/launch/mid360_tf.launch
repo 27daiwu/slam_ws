@@ -1,0 +1,9 @@
+<launch>
+  <!-- Robot body -> LiDAR -->
+  <node pkg="tf" type="static_transform_publisher" name="base_to_livox"
+        args="0 0 -0.47618 0 0 0 base_link livox_frame 100" />
+
+  <!-- LiDAR -> internal IMU -->
+  <node pkg="tf" type="static_transform_publisher" name="livox_to_imu"
+        args="0.011 0.02329 -0.04412 0 0 0 livox_frame livox_imu 100" />
+</launch>

@@ -10,7 +10,6 @@
     <param name="lidar_frame_id" value="livox_frame"/>
     <param name="imu_frame_id" value="livox_imu"/>
 
-    <!-- 建议优先保留原始 DDS 时间戳 -->
-    <param name="use_ros_now_for_stamp" value="false"/>
+    <param name="use_ros_now_for_stamp" value="true"/>
   </node>
 </launch>
