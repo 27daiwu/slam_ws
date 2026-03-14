@@ -4,7 +4,7 @@
         name="mid360_dds_to_ros1_node"
         output="screen">
 
-    <param name="lidar_topic_out" value="/livox/lidar"/>
+    <param name="lidar_topic_out" value="/livox/lidar_raw"/>
     <param name="imu_topic_out" value="/livox/imu"/>
 
     <param name="lidar_frame_id" value="livox_frame"/>

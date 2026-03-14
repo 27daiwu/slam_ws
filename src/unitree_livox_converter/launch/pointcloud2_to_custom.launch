@@ -1,0 +1,13 @@
+<launch>
+  <node pkg="unitree_livox_converter"
+        type="pointcloud2_to_livox_custom"
+        name="pointcloud2_to_livox_custom"
+        output="screen">
+    <param name="input_topic" value="/livox/lidar_raw" />
+    <param name="output_topic" value="/livox/lidar" />
+    <param name="frame_id" value="livox_frame" />
+    <param name="lidar_id" value="0" />
+    <param name="use_msg_stamp_as_timebase" value="true" />
+    <param name="time_is_in_seconds" value="true" />
+  </node>
+</launch>

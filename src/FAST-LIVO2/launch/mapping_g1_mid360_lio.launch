@@ -1,5 +1,22 @@
 <launch>
+  <!-- 主配置：全局加载 -->
   <rosparam command="load" file="$(find fast_livo)/config/g1_mid360_lio.yaml" />
+
+  <!-- 相机参数：单独放到 laserMapping 命名空间 -->
+  <param name="laserMapping/cam_model" value="Pinhole" />
+  <param name="laserMapping/cam_width" value="640" />
+  <param name="laserMapping/cam_height" value="480" />
+  <param name="laserMapping/scale" value="1.0" />
+
+  <param name="laserMapping/cam_fx" value="300.0" />
+  <param name="laserMapping/cam_fy" value="300.0" />
+  <param name="laserMapping/cam_cx" value="320.0" />
+  <param name="laserMapping/cam_cy" value="240.0" />
+
+  <param name="laserMapping/cam_d0" value="0.0" />
+  <param name="laserMapping/cam_d1" value="0.0" />
+  <param name="laserMapping/cam_d2" value="0.0" />
+  <param name="laserMapping/cam_d3" value="0.0" />
 
   <node pkg="fast_livo"
         type="fastlivo_mapping"

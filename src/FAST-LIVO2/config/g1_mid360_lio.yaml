@@ -7,13 +7,10 @@ common:
   ros_driver_bug_fix: false
 
 extrin_calib:
-  # LiDAR -> IMU
   extrinsic_T: [0.011, 0.02329, -0.04412]
   extrinsic_R: [1, 0, 0,
                 0, 1, 0,
                 0, 0, 1]
-
-  # 下面这组是 LiDAR -> Camera，纯LIO阶段不会用到，先填单位阵/零平移
   Rcl: [1, 0, 0,
         0, 1, 0,
         0, 0, 1]
