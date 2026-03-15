@@ -10,6 +10,6 @@
     <param name="lidar_frame_id" value="livox_frame"/>
     <param name="imu_frame_id" value="livox_imu"/>
 
-    <param name="use_ros_now_for_stamp" value="true"/>
+    <param name="use_ros_now_for_stamp" value="false"/>
   </node>
 </launch>
