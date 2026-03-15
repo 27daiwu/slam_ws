@@ -22,8 +22,8 @@ time_offset:
   exposure_time_init: 0.0
 
 preprocess:
-  point_filter_num: 1
-  filter_size_surf: 0.1
+  point_filter_num: 2
+  filter_size_surf: 0.25
   lidar_type: 1
   scan_line: 4
   blind: 0.5
@@ -48,14 +48,9 @@ imu:
   b_gyr_cov: 0.0001
 
 lio:
-  max_iterations: 5
-  dept_err: 0.02
-  beam_err: 0.05
-  min_eigen_value: 0.0025
-  voxel_size: 0.5
+  voxel_size: 1.0
   max_layer: 2
-  max_points_num: 50
-  layer_init_num: [5, 5, 5, 5, 5]
+  max_points_num: 30
 
 local_map:
   map_sliding_en: false
@@ -67,21 +62,20 @@ uav:
   gravity_align_en: false
 
 publish:
-  dense_map_en: true
+  dense_map_en: false
   pub_effect_point_en: false
   pub_plane_en: false
-  pub_scan_num: 1
-  blind_rgb_points: 0.0
+  pub_scan_num: 2
 
 evo:
   seq_name: "g1_mid360_test"
   pose_output_en: false
 
 pcd_save:
-  pcd_save_en: false
+  pcd_save_en: true
   type: 0
   colmap_output_en: false
-  filter_size_pcd: 0.15
+  filter_size_pcd: 0.4
   interval: -1
 
 image_save:
