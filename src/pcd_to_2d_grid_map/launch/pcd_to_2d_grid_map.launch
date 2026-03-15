@@ -1,0 +1,43 @@
+<launch>
+  <!-- mode: pcd 或 topic -->
+  <arg name="mode" default="pcd"/>
+
+  <!-- 仅 mode=pcd 时使用 -->
+  <arg name="pcd_path" default="/home/unitree/maps/fastlio_map.pcd"/>
+
+  <!-- 仅 mode=topic 时使用 -->
+  <arg name="pointcloud_topic" default="/Laser_map"/>
+
+  <arg name="output_dir" default="/home/unitree/maps"/>
+  <arg name="map_name" default="g1_nav_map"/>
+
+  <!-- 2D 地图关键参数 -->
+  <arg name="resolution" default="0.05"/>
+  <arg name="z_min" default="0.05"/>
+  <arg name="z_max" default="1.50"/>
+  <arg name="voxel_leaf_size" default="0.10"/>
+  <arg name="padding_radius" default="0.10"/>
+  <arg name="min_points_per_cell" default="2"/>
+
+  <node pkg="pcd_to_2d_grid_map"
+        type="pcd_to_2d_grid_map_node"
+        name="pcd_to_2d_grid_map_node"
+        output="screen">
+    <param name="mode" value="$(arg mode)"/>
+    <param name="pcd_path" value="$(arg pcd_path)"/>
+    <param name="pointcloud_topic" value="$(arg pointcloud_topic)"/>
+    <param name="output_dir" value="$(arg output_dir)"/>
+    <param name="map_name" value="$(arg map_name)"/>
+
+    <param name="frame_id" value="map"/>
+    <param name="resolution" value="$(arg resolution)"/>
+    <param name="z_min" value="$(arg z_min)"/>
+    <param name="z_max" value="$(arg z_max)"/>
+    <param name="voxel_leaf_size" value="$(arg voxel_leaf_size)"/>
+    <param name="padding_radius" value="$(arg padding_radius)"/>
+    <param name="min_points_per_cell" value="$(arg min_points_per_cell)"/>
+
+    <param name="save_pgm_yaml" value="true"/>
+    <param name="process_once" value="true"/>
+  </node>
+</launch>
