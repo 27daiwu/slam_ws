@@ -3,11 +3,13 @@
         type="pointcloud2_to_livox_custom"
         name="pointcloud2_to_livox_custom"
         output="screen">
-    <param name="input_topic" value="/livox/lidar_raw" />
-    <param name="output_topic" value="/livox/lidar" />
-    <param name="frame_id" value="livox_frame" />
-    <param name="lidar_id" value="0" />
-    <param name="use_msg_stamp_as_timebase" value="true" />
-    <param name="time_is_in_seconds" value="true" />
+  <param name="input_topic" value="/livox/lidar_raw"/>
+  <param name="output_topic" value="/livox/lidar"/>
+  <param name="frame_id" value="livox_frame"/>
+  <param name="lidar_id" value="0"/>
+
+  <param name="time_mode" value="0"/>
+  <param name="scan_period_us" value="100000"/>
+  <param name="debug_print_points" value="8"/>
   </node>
 </launch>
